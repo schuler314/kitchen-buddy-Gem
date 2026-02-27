@@ -107,34 +107,41 @@
                         </div>
 
                         <!-- Conditional: Side/Snack Specifics -->
-                        <div id="attribute-fields" class="hidden bg-green-50 p-4 rounded-2xl border border-green-100 space-y-4">
+                        <div id="attribute-fields" class="hidden bg-green-50 p-4 rounded-2xl border border-green-100 space-y-3">
                             <label class="block text-sm font-bold text-gray-700">Attributes (Select all that apply) *</label>
-                            <div class="flex flex-wrap gap-2" id="attribute-buttons">
-                                <button type="button" data-val="Simple Carb" class="attr-btn py-2 px-3 rounded-full text-xs font-bold transition-all border bg-white text-gray-600 border-gray-200 hover:bg-green-100">Simple Carb</button>
-                                <button type="button" data-val="Complex Carb" class="attr-btn py-2 px-3 rounded-full text-xs font-bold transition-all border bg-white text-gray-600 border-gray-200 hover:bg-green-100">Complex Carb</button>
-                                <button type="button" data-val="Healthy Fat" class="attr-btn py-2 px-3 rounded-full text-xs font-bold transition-all border bg-white text-gray-600 border-gray-200 hover:bg-green-100">Healthy Fat</button>
-                                <button type="button" data-val="Fruit" class="attr-btn py-2 px-3 rounded-full text-xs font-bold transition-all border bg-white text-gray-600 border-gray-200 hover:bg-green-100">Fruit</button>
-                                <button type="button" data-val="Veggie" class="attr-btn py-2 px-3 rounded-full text-xs font-bold transition-all border bg-white text-gray-600 border-gray-200 hover:bg-green-100">Veggie</button>
+                            <div class="flex flex-wrap justify-center gap-2" id="attribute-buttons">
+                                <button type="button" data-val="Simple Carb" class="attr-btn grow py-1.5 px-3 rounded-full text-xs font-bold transition-all border bg-white text-gray-600 border-gray-200 hover:bg-green-100 flex items-center justify-center">Simple Carb</button>
+                                <button type="button" data-val="Complex Carb" class="attr-btn grow py-1.5 px-3 rounded-full text-xs font-bold transition-all border bg-white text-gray-600 border-gray-200 hover:bg-green-100 flex items-center justify-center">Complex Carb</button>
+                                <button type="button" data-val="Healthy Fat" class="attr-btn grow py-1.5 px-3 rounded-full text-xs font-bold transition-all border bg-white text-gray-600 border-gray-200 hover:bg-green-100 flex items-center justify-center">Healthy Fat</button>
+                                <button type="button" data-val="Protein" class="attr-btn grow py-1.5 px-3 rounded-full text-xs font-bold transition-all border bg-white text-gray-600 border-gray-200 hover:bg-green-100 flex items-center justify-center">Protein</button>
+                                <button type="button" data-val="Dairy" class="attr-btn grow py-1.5 px-3 rounded-full text-xs font-bold transition-all border bg-white text-gray-600 border-gray-200 hover:bg-green-100 flex items-center justify-center">Dairy</button>
+                                <button type="button" data-val="Fruit" class="attr-btn grow py-1.5 px-3 rounded-full text-xs font-bold transition-all border bg-white text-gray-600 border-gray-200 hover:bg-green-100 flex items-center justify-center">Fruit</button>
+                                <button type="button" data-val="Veggie" class="attr-btn grow py-1.5 px-3 rounded-full text-xs font-bold transition-all border bg-white text-gray-600 border-gray-200 hover:bg-green-100 flex items-center justify-center">Veggie</button>
+                                <button type="button" data-val="Sweet Treat" class="attr-btn grow py-1.5 px-3 rounded-full text-xs font-bold transition-all border bg-white text-gray-600 border-gray-200 hover:bg-green-100 flex items-center justify-center">Sweet Treat</button>
                             </div>
                         </div>
 
                         <!-- Conditional: Prep Time -->
-                        <div id="prep-fields" class="hidden bg-yellow-50 p-4 rounded-2xl border border-yellow-100 space-y-3">
-                            <div class="flex items-center justify-between">
-                                <label class="text-sm font-bold text-gray-700">Requires Prep Time?</label>
-                                <input type="checkbox" id="has-prep-time" class="w-5 h-5 text-orange-500 rounded focus:ring-orange-400">
+                        <div id="prep-fields" class="hidden bg-yellow-50 p-4 rounded-2xl border border-yellow-100 space-y-4">
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-2">Requires Prep Time?</label>
+                                <div class="flex bg-yellow-400/20 p-1 rounded-xl">
+                                    <button type="button" data-val="no" class="prep-toggle-btn flex-1 py-2 text-sm font-bold rounded-lg transition-all bg-white text-yellow-700 shadow-sm">No Prep</button>
+                                    <button type="button" data-val="yes" class="prep-toggle-btn flex-1 py-2 text-sm font-bold rounded-lg transition-all text-yellow-700/60 hover:text-yellow-800">Needs Prep</button>
+                                </div>
                             </div>
-                            <div id="prep-time-selector" class="hidden flex gap-2 pt-2">
-                                <button type="button" data-val="<5 mins" class="prep-btn flex-1 py-2 rounded-lg text-xs font-bold transition-colors bg-white border border-gray-200 text-gray-600"><5 mins</button>
-                                <button type="button" data-val="6-15 mins" class="prep-btn flex-1 py-2 rounded-lg text-xs font-bold transition-colors bg-white border border-gray-200 text-gray-600">6-15 mins</button>
-                                <button type="button" data-val=">15 mins" class="prep-btn flex-1 py-2 rounded-lg text-xs font-bold transition-colors bg-white border border-gray-200 text-gray-600">>15 mins</button>
+                            
+                            <div id="prep-time-selector" class="hidden flex gap-2 pt-2 border-t border-yellow-200/50">
+                                <button type="button" data-val="<5 mins" class="prep-btn flex-1 py-2 rounded-lg text-xs font-bold transition-colors bg-white border border-yellow-200 text-gray-600"><5 mins</button>
+                                <button type="button" data-val="6-15 mins" class="prep-btn flex-1 py-2 rounded-lg text-xs font-bold transition-colors bg-white border border-yellow-200 text-gray-600">6-15 mins</button>
+                                <button type="button" data-val=">15 mins" class="prep-btn flex-1 py-2 rounded-lg text-xs font-bold transition-colors bg-white border border-yellow-200 text-gray-600">>15 mins</button>
                             </div>
                         </div>
 
                         <!-- Ratings -->
                         <div class="grid grid-cols-2 gap-4">
                             <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100">
-                                <label class="block text-sm font-bold text-gray-700 mb-2">Hunger Satisfaction *</label>
+                                <label class="block text-sm font-bold text-gray-700 mb-2">Hunger Satisfaction</label>
                                 <input type="range" id="hunger-rating" min="1" max="5" value="3" class="w-full accent-orange-500" oninput="document.getElementById('hunger-val').innerText = this.value">
                                 <div class="text-center text-xs font-bold text-orange-500 mt-1"><span id="hunger-val">3</span> / 5</div>
                             </div>
@@ -158,9 +165,14 @@
                             </div>
                         </div>
 
-                        <button type="submit" id="save-btn" class="w-full py-4 bg-orange-500 hover:bg-orange-600 text-white font-black text-lg rounded-2xl shadow-lg transition-all transform hover:scale-[1.02] active:scale-95">
-                            Save to Kitchen
-                        </button>
+                        <div class="pt-6 mt-8 border-t border-gray-100">
+                            <button type="submit" id="save-btn" class="w-full py-4 bg-gradient-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white font-black text-lg rounded-2xl shadow-[0_8px_30px_rgb(249,115,22,0.3)] transition-all transform hover:scale-[1.02] active:scale-95">
+                                <div class="flex items-center justify-center gap-2">
+                                    <i data-lucide="plus-circle" class="w-6 h-6"></i>
+                                    Save to Kitchen
+                                </div>
+                            </button>
+                        </div>
                     </form>
                 </div>
             </div>
@@ -263,13 +275,13 @@
         </div>
 
         <!-- Mobile Bottom Navigation -->
-        <div id="mobile-nav" class="fixed bottom-0 w-full max-w-md bg-white border-t border-gray-100 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] flex justify-between px-2 p-3 pb-safe z-20 rounded-t-2xl transition-all duration-300">
+        <div id="mobile-nav" class="fixed bottom-0 w-full max-w-md bg-white border-t border-gray-100 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] flex items-center justify-between px-2 py-3 pb-safe z-20 rounded-t-2xl transition-all duration-300">
             <button onclick="switchTab('kitchen')" class="nav-btn-mob flex flex-col items-center justify-center w-16 gap-1" data-tab="kitchen">
                 <div class="icon-bg p-2 rounded-2xl transition-all bg-orange-100 text-orange-600"><i data-lucide="search" class="w-5 h-5"></i></div>
                 <span class="text-[10px] font-bold text-orange-600">Kitchen</span>
             </button>
-            <button onclick="switchTab('input')" class="nav-btn-mob flex flex-col items-center justify-center w-16 gap-1 -mt-6" data-tab="input">
-                <div class="icon-bg transition-all bg-orange-500 text-white shadow-lg w-14 h-14 rounded-full flex items-center justify-center"><i data-lucide="plus-circle" class="w-6 h-6"></i></div>
+            <button onclick="switchTab('input')" class="nav-btn-mob flex flex-col items-center justify-center w-16 gap-1" data-tab="input">
+                <div class="icon-bg transition-all bg-orange-500 text-white shadow-md w-12 h-12 rounded-full flex items-center justify-center"><i data-lucide="plus-circle" class="w-6 h-6"></i></div>
             </button>
             <button onclick="switchTab('decide')" class="nav-btn-mob flex flex-col items-center justify-center w-16 gap-1" data-tab="decide">
                 <div class="icon-bg p-2 rounded-2xl transition-all text-gray-400"><i data-lucide="chef-hat" class="w-5 h-5"></i></div>
@@ -524,21 +536,29 @@ function setupFormListeners() {
         // Attributes
         document.querySelectorAll('.attr-btn').forEach(btn => {
             if(formData.sideSnackTypes.includes(btn.dataset.val)) {
-                btn.className = "attr-btn py-2 px-3 rounded-full text-xs font-bold transition-all border bg-green-500 text-white border-green-600 shadow-sm";
-                btn.innerHTML = `<i data-lucide="check-circle-2" class="w-3 h-3 inline mr-1"></i>${btn.dataset.val}`;
+                btn.className = "attr-btn grow py-1.5 px-3 rounded-full text-xs font-bold transition-all border bg-green-500 text-white border-green-600 shadow-sm flex items-center justify-center gap-1";
+                btn.innerHTML = `<i data-lucide="check-circle-2" class="w-3 h-3"></i>${btn.dataset.val}`;
             } else {
-                btn.className = "attr-btn py-2 px-3 rounded-full text-xs font-bold transition-all border bg-white text-gray-600 border-gray-200 hover:bg-green-100";
+                btn.className = "attr-btn grow py-1.5 px-3 rounded-full text-xs font-bold transition-all border bg-white text-gray-600 border-gray-200 hover:bg-green-100 flex items-center justify-center";
                 btn.innerHTML = btn.dataset.val;
             }
         });
 
-        // Prep time
-        document.getElementById('has-prep-time').checked = formData.hasPrepTime;
+        // Prep time toggle
+        document.querySelectorAll('.prep-toggle-btn').forEach(btn => {
+            if((btn.dataset.val === 'yes' && formData.hasPrepTime) || (btn.dataset.val === 'no' && !formData.hasPrepTime)) {
+                btn.className = "prep-toggle-btn flex-1 py-2 text-sm font-bold rounded-lg transition-all bg-white text-yellow-700 shadow-sm";
+            } else {
+                btn.className = "prep-toggle-btn flex-1 py-2 text-sm font-bold rounded-lg transition-all text-yellow-700/60 hover:text-yellow-800";
+            }
+        });
         document.getElementById('prep-time-selector').classList.toggle('hidden', !formData.hasPrepTime);
+
+        // Prep time values
         document.querySelectorAll('.prep-btn').forEach(btn => {
             btn.className = btn.dataset.val === formData.prepTime
                 ? "prep-btn flex-1 py-2 rounded-lg text-xs font-bold transition-colors bg-yellow-400 text-yellow-900"
-                : "prep-btn flex-1 py-2 rounded-lg text-xs font-bold transition-colors bg-white border border-gray-200 text-gray-600";
+                : "prep-btn flex-1 py-2 rounded-lg text-xs font-bold transition-colors bg-white border border-yellow-200 text-gray-600";
         });
         
         lucide.createIcons();
@@ -565,10 +585,14 @@ function setupFormListeners() {
             updateFormUI();
         };
     });
-    // Prep checks
-    document.getElementById('has-prep-time').onchange = (e) => {
-        formData.hasPrepTime = e.target.checked; updateFormUI();
-    };
+    // Prep toggle clicks
+    document.querySelectorAll('.prep-toggle-btn').forEach(btn => {
+        btn.onclick = () => {
+            formData.hasPrepTime = (btn.dataset.val === 'yes');
+            updateFormUI();
+        };
+    });
+    // Prep value clicks
     document.querySelectorAll('.prep-btn').forEach(btn => {
         btn.onclick = () => { formData.prepTime = btn.dataset.val; updateFormUI(); };
     });
