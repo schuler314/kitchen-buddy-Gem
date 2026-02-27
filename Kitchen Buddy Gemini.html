@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kitchen Buddy</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .hidden { display: none !important; }
+        .animate-fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        /* Scrollbar hiding for clean UI */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #fed7aa; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #fdba74; }
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom, 20px); }
+    </style>
+</head>
+<body class="bg-[#FFFDF7] font-sans text-gray-800 antialiased">
+
+<div id="app-root" class="min-h-screen transition-all duration-300">
+    <div id="main-container" class="mx-auto bg-white shadow-xl overflow-hidden max-w-md w-full min-h-screen flex flex-col relative pb-20">
+        
+        <!-- Header / Sidebar -->
+        <div id="header" class="bg-orange-400 text-white p-4 shadow-md flex justify-between items-center z-10 transition-all duration-300">
+            <div class="flex items-center gap-2">
+                <i data-lucide="chef-hat" id="header-icon" class="w-7 h-7"></i>
+                <div>
+                    <h1 id="header-title" class="font-black tracking-tight leading-none text-xl">Kitchen Buddy</h1>
+                    <span class="text-[10px] font-bold opacity-80 flex items-center gap-1 mt-1">Local Storage Mode</span>
+                </div>
+            </div>
+            
+            <button onclick="toggleDesktopMode()" id="desktop-toggle-btn" class="p-2 rounded-full transition-colors bg-orange-500 hover:bg-orange-600" title="Toggle View">
+                <i data-lucide="monitor" id="desktop-toggle-icon" class="w-5 h-5"></i>
+            </button>
+
+            <!-- Desktop Nav (Hidden on Mobile) -->
+            <div id="desktop-nav" class="hidden mt-10 flex-col gap-3 w-full">
+                <button onclick="switchTab('kitchen')" id="desk-nav-kitchen" class="desk-nav-btn flex items-center gap-3 p-3 rounded-xl font-semibold transition-all text-orange-700 hover:bg-orange-100"><i data-lucide="search" class="w-5 h-5"></i> <span>My Kitchen</span></button>
+                <button onclick="switchTab('input')" id="desk-nav-input" class="desk-nav-btn flex items-center gap-3 p-3 rounded-xl font-semibold transition-all text-orange-700 hover:bg-orange-100"><i data-lucide="plus-circle" class="w-5 h-5"></i> <span>Add Food</span></button>
+                <button onclick="switchTab('decide')" id="desk-nav-decide" class="desk-nav-btn flex items-center gap-3 p-3 rounded-xl font-semibold transition-all text-orange-700 hover:bg-orange-100"><i data-lucide="chef-hat" class="w-5 h-5"></i> <span>Help Me Decide</span></button>
+                <button onclick="switchTab('report')" id="desk-nav-report" class="desk-nav-btn flex items-center gap-3 p-3 rounded-xl font-semibold transition-all text-orange-700 hover:bg-orange-100"><i data-lucide="bar-chart-3" class="w-5 h-5"></i> <span>Waste Report</span></button>
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div id="content-area" class="flex-1 overflow-y-auto w-full">
+            
+            <!-- INPUT TAB -->
+            <div id="tab-input" class="hidden animate-fade-in p-4 w-full">
+                <div class="mx-auto" id="input-container-inner">
+                    <h2 class="text-2xl font-black text-orange-600 mb-6 flex items-center gap-2"><i data-lucide="plus-circle"></i> Add to Kitchen</h2>
+                    <div id="form-error" class="hidden bg-red-100 text-red-600 p-3 rounded-lg mb-4 text-sm font-semibold"></div>
+                    
+                    <form id="add-food-form" class="space-y-6 pb-10" onsubmit="handleFormSubmit(event)">
+                        <!-- Name -->
+                        <div class="relative">
+                            <label class="block text-sm font-bold text-gray-700 mb-1">Food Name *</label>
+                            <input type="text" id="food-name" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-orange-100 focus:border-orange-400 transition-all" placeholder="e.g. Chicken Soup..." autocomplete="off">
+                            <div id="suggestions-box" class="hidden absolute z-10 w-full mt-1 bg-white border border-gray-100 rounded-xl shadow-xl max-h-48 overflow-y-auto"></div>
+                        </div>
+
+                        <!-- State -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Storage State *</label>
+                            <div class="grid grid-cols-3 gap-2" id="state-buttons">
+                                <button type="button" data-val="Cooked" class="state-btn py-3 px-2 rounded-xl border-2 font-bold text-sm transition-all flex flex-col items-center gap-1 bg-white border-gray-100 text-gray-500 hover:border-orange-200"><i data-lucide="flame" class="w-5 h-5"></i>Cooked</button>
+                                <button type="button" data-val="Frozen" class="state-btn py-3 px-2 rounded-xl border-2 font-bold text-sm transition-all flex flex-col items-center gap-1 bg-white border-gray-100 text-gray-500 hover:border-orange-200"><i data-lucide="thermometer-snowflake" class="w-5 h-5"></i>Frozen</button>
+                                <button type="button" data-val="Packaged" class="state-btn py-3 px-2 rounded-xl border-2 font-bold text-sm transition-all flex flex-col items-center gap-1 bg-white border-gray-100 text-gray-500 hover:border-orange-200"><i data-lucide="package" class="w-5 h-5"></i>Packaged</button>
+                            </div>
+                        </div>
+
+                        <!-- Conditional: Cooked Fields -->
+                        <div id="cooked-fields" class="hidden bg-orange-50 p-4 rounded-2xl space-y-4 border border-orange-100">
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-1">Date Cooked</label>
+                                <input type="date" id="cooked-date" class="w-full p-3 rounded-xl border border-gray-200 bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-2">Time of Day</label>
+                                <div class="flex gap-2" id="time-buttons">
+                                    <button type="button" data-val="Morning" class="time-btn flex-1 py-2 rounded-lg text-sm font-semibold transition-colors bg-white border border-gray-200 text-gray-600">Morning</button>
+                                    <button type="button" data-val="Afternoon" class="time-btn flex-1 py-2 rounded-lg text-sm font-semibold transition-colors bg-white border border-gray-200 text-gray-600">Afternoon</button>
+                                    <button type="button" data-val="Evening" class="time-btn flex-1 py-2 rounded-lg text-sm font-semibold transition-colors bg-white border border-gray-200 text-gray-600">Evening</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Conditional: Expiration Date -->
+                        <div id="expiration-fields" class="hidden bg-blue-50 p-4 rounded-2xl border border-blue-100">
+                            <label class="block text-sm font-bold text-gray-700 mb-1">Expiration Date</label>
+                            <input type="date" id="expiration-date" class="w-full p-3 rounded-xl border border-gray-200 bg-white">
+                        </div>
+
+                        <!-- Type Selection -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Food Type *</label>
+                            <div class="grid grid-cols-2 gap-3" id="type-buttons">
+                                <button type="button" data-val="All-in-one meal" class="type-btn py-3 px-4 rounded-xl border-2 font-bold text-sm transition-all flex items-center gap-2 bg-white border-gray-100 text-gray-600 hover:border-orange-200"><i data-lucide="utensils-crossed"></i> All-in-one</button>
+                                <button type="button" data-val="Meat" class="type-btn py-3 px-4 rounded-xl border-2 font-bold text-sm transition-all flex items-center gap-2 bg-white border-gray-100 text-gray-600 hover:border-orange-200"><i data-lucide="drumstick"></i> Meat</button>
+                                <button type="button" data-val="Side" class="type-btn py-3 px-4 rounded-xl border-2 font-bold text-sm transition-all flex items-center gap-2 bg-white border-gray-100 text-gray-600 hover:border-orange-200"><i data-lucide="salad"></i> Side</button>
+                                <button type="button" data-val="Snack" class="type-btn py-3 px-4 rounded-xl border-2 font-bold text-sm transition-all flex items-center gap-2 bg-white border-gray-100 text-gray-600 hover:border-orange-200"><i data-lucide="cookie"></i> Snack</button>
+                            </div>
+                        </div>
+
+                        <!-- Conditional: Side/Snack Specifics -->
+                        <div id="attribute-fields" class="hidden bg-green-50 p-4 rounded-2xl border border-green-100 space-y-4">
+                            <label class="block text-sm font-bold text-gray-700">Attributes (Select all that apply) *</label>
+                            <div class="flex flex-wrap gap-2" id="attribute-buttons">
+                                <button type="button" data-val="Simple Carb" class="attr-btn py-2 px-3 rounded-full text-xs font-bold transition-all border bg-white text-gray-600 border-gray-200 hover:bg-green-100">Simple Carb</button>
+                                <button type="button" data-val="Complex Carb" class="attr-btn py-2 px-3 rounded-full text-xs font-bold transition-all border bg-white text-gray-600 border-gray-200 hover:bg-green-100">Complex Carb</button>
+                                <button type="button" data-val="Healthy Fat" class="attr-btn py-2 px-3 rounded-full text-xs font-bold transition-all border bg-white text-gray-600 border-gray-200 hover:bg-green-100">Healthy Fat</button>
+                                <button type="button" data-val="Fruit" class="attr-btn py-2 px-3 rounded-full text-xs font-bold transition-all border bg-white text-gray-600 border-gray-200 hover:bg-green-100">Fruit</button>
+                                <button type="button" data-val="Veggie" class="attr-btn py-2 px-3 rounded-full text-xs font-bold transition-all border bg-white text-gray-600 border-gray-200 hover:bg-green-100">Veggie</button>
+                            </div>
+                        </div>
+
+                        <!-- Conditional: Prep Time -->
+                        <div id="prep-fields" class="hidden bg-yellow-50 p-4 rounded-2xl border border-yellow-100 space-y-3">
+                            <div class="flex items-center justify-between">
+                                <label class="text-sm font-bold text-gray-700">Requires Prep Time?</label>
+                                <input type="checkbox" id="has-prep-time" class="w-5 h-5 text-orange-500 rounded focus:ring-orange-400">
+                            </div>
+                            <div id="prep-time-selector" class="hidden flex gap-2 pt-2">
+                                <button type="button" data-val="<5 mins" class="prep-btn flex-1 py-2 rounded-lg text-xs font-bold transition-colors bg-white border border-gray-200 text-gray-600"><5 mins</button>
+                                <button type="button" data-val="6-15 mins" class="prep-btn flex-1 py-2 rounded-lg text-xs font-bold transition-colors bg-white border border-gray-200 text-gray-600">6-15 mins</button>
+                                <button type="button" data-val=">15 mins" class="prep-btn flex-1 py-2 rounded-lg text-xs font-bold transition-colors bg-white border border-gray-200 text-gray-600">>15 mins</button>
+                            </div>
+                        </div>
+
+                        <!-- Ratings -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                                <label class="block text-sm font-bold text-gray-700 mb-2">Hunger Satisfaction *</label>
+                                <input type="range" id="hunger-rating" min="1" max="5" value="3" class="w-full accent-orange-500" oninput="document.getElementById('hunger-val').innerText = this.value">
+                                <div class="text-center text-xs font-bold text-orange-500 mt-1"><span id="hunger-val">3</span> / 5</div>
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                                <label class="block text-sm font-bold text-gray-700 mb-2">Nutritional Value</label>
+                                <input type="range" id="nutrition-rating" min="1" max="5" value="3" class="w-full accent-green-500" oninput="document.getElementById('nutrition-val').innerText = this.value">
+                                <div class="text-center text-xs font-bold text-green-500 mt-1"><span id="nutrition-val">3</span> / 5</div>
+                            </div>
+                        </div>
+
+                        <!-- Image Upload -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Photos (Optional)</label>
+                            <div class="flex gap-3 overflow-x-auto pb-2" id="image-preview-container">
+                                <!-- Previews injected here -->
+                                <label id="add-photo-btn" class="w-20 h-20 flex flex-col items-center justify-center bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:bg-gray-100 flex-shrink-0">
+                                    <i data-lucide="image" class="w-6 h-6 text-gray-400"></i>
+                                    <span class="text-[10px] font-bold text-gray-500 mt-1">Add Photo</span>
+                                    <input type="file" id="image-upload" accept="image/*" multiple class="hidden">
+                                </label>
+                            </div>
+                        </div>
+
+                        <button type="submit" id="save-btn" class="w-full py-4 bg-orange-500 hover:bg-orange-600 text-white font-black text-lg rounded-2xl shadow-lg transition-all transform hover:scale-[1.02] active:scale-95">
+                            Save to Kitchen
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- KITCHEN TAB -->
+            <div id="tab-kitchen" class="hidden animate-fade-in p-4 w-full h-full flex flex-col">
+                <!-- Filters -->
+                <div class="flex justify-between bg-gray-100 p-1 rounded-2xl mb-6">
+                    <button onclick="setKitchenFilter('Cooked')" id="filter-Cooked" class="filter-btn flex-1 py-2 text-sm font-bold rounded-xl transition-all bg-white text-orange-600 shadow-sm">Cooked</button>
+                    <button onclick="setKitchenFilter('Frozen')" id="filter-Frozen" class="filter-btn flex-1 py-2 text-sm font-bold rounded-xl transition-all text-gray-500 hover:text-gray-700">Frozen</button>
+                    <button onclick="setKitchenFilter('Packaged')" id="filter-Packaged" class="filter-btn flex-1 py-2 text-sm font-bold rounded-xl transition-all text-gray-500 hover:text-gray-700">Packaged</button>
+                </div>
+
+                <!-- List -->
+                <div id="kitchen-list" class="space-y-3 pb-20"></div>
+            </div>
+
+            <!-- DECIDE TAB -->
+            <div id="tab-decide" class="hidden animate-fade-in p-4 pb-24 w-full mx-auto" style="max-width: 48rem;">
+                <div class="bg-orange-500 rounded-3xl p-6 text-white shadow-lg mb-8 relative overflow-hidden">
+                    <div class="relative z-10">
+                        <h2 class="text-3xl font-black mb-2 flex items-center gap-2"><i data-lucide="flame" class="w-8 h-8 text-yellow-300"></i> What to eat?</h2>
+                        <p class="text-orange-100 font-medium mb-6">Tell me what you need, and I'll look in your kitchen.</p>
+
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-bold text-orange-200 mb-2">How hungry are you?</label>
+                                <div class="flex bg-orange-600/50 p-1 rounded-xl" id="hunger-level-btns">
+                                    <button onclick="setDecideHunger('Meal')" id="decide-hunger-Meal" class="flex-1 py-2 font-bold rounded-lg transition-all bg-white text-orange-600 shadow-md">Meal</button>
+                                    <button onclick="setDecideHunger('Snack')" id="decide-hunger-Snack" class="flex-1 py-2 font-bold rounded-lg transition-all text-orange-100 hover:text-white">Snack</button>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-orange-200 mb-2">How much prep time do you have?</label>
+                                <div class="flex gap-2" id="decide-prep-btns">
+                                    <button onclick="setDecidePrep('<5 mins')" id="decide-prep-5" class="flex-1 py-2 text-xs font-bold rounded-lg border-2 transition-all bg-transparent border-orange-400 text-orange-100"><5 mins</button>
+                                    <button onclick="setDecidePrep('6-15 mins')" id="decide-prep-15" class="flex-1 py-2 text-xs font-bold rounded-lg border-2 transition-all bg-transparent border-orange-400 text-orange-100">6-15 mins</button>
+                                    <button onclick="setDecidePrep('>15 mins')" id="decide-prep-999" class="flex-1 py-2 text-xs font-bold rounded-lg border-2 transition-all bg-yellow-400 border-yellow-400 text-yellow-900 shadow-md">>15 mins</button>
+                                </div>
+                            </div>
+                            <button onclick="generateSuggestions()" id="generate-btn" class="w-full mt-4 bg-yellow-400 hover:bg-yellow-300 text-yellow-900 font-black py-4 rounded-xl shadow-lg transition-transform transform active:scale-95 flex items-center justify-center gap-2">
+                                <i data-lucide="search"></i> Find Food!
+                            </button>
+                        </div>
+                    </div>
+                    <i data-lucide="chef-hat" class="absolute -bottom-10 -right-10 w-48 h-48 text-orange-400 opacity-20 transform -rotate-12"></i>
+                </div>
+                
+                <div id="decide-results" class="animate-fade-in space-y-4"></div>
+                <div id="decide-empty-state" class="text-center text-gray-400 mt-10">
+                    <p>Hit the button above to get ideas based on your kitchen!</p>
+                </div>
+            </div>
+
+            <!-- REPORT TAB -->
+            <div id="tab-report" class="hidden animate-fade-in p-4 pb-24 w-full mx-auto" style="max-width: 48rem;">
+                <div class="flex items-center gap-3 mb-6 text-gray-800">
+                    <i data-lucide="bar-chart-3" class="w-8 h-8 text-orange-500"></i>
+                    <h2 class="text-2xl font-black">Food Waste Report</h2>
+                </div>
+
+                <div class="bg-white p-2 rounded-2xl shadow-sm border border-gray-100 mb-6 flex overflow-x-auto gap-2 snap-x" id="report-time-btns">
+                    <button onclick="setReportTime(7)" id="rep-btn-7" class="flex-shrink-0 px-4 py-2 font-bold text-sm rounded-xl transition-all snap-center text-gray-500 hover:bg-orange-50">7 Days</button>
+                    <button onclick="setReportTime(30)" id="rep-btn-30" class="flex-shrink-0 px-4 py-2 font-bold text-sm rounded-xl transition-all snap-center bg-orange-500 text-white shadow-md">30 Days</button>
+                    <button onclick="setReportTime(90)" id="rep-btn-90" class="flex-shrink-0 px-4 py-2 font-bold text-sm rounded-xl transition-all snap-center text-gray-500 hover:bg-orange-50">90 Days</button>
+                    <button onclick="setReportTime(180)" id="rep-btn-180" class="flex-shrink-0 px-4 py-2 font-bold text-sm rounded-xl transition-all snap-center text-gray-500 hover:bg-orange-50">6 Months</button>
+                    <button onclick="setReportTime('custom')" id="rep-btn-custom" class="flex-shrink-0 px-4 py-2 font-bold text-sm rounded-xl transition-all snap-center text-gray-500 hover:bg-orange-50">Custom</button>
+                </div>
+
+                <div id="custom-date-fields" class="hidden flex gap-4 mb-6 bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+                    <div class="flex-1">
+                        <label class="text-xs font-bold text-gray-500">Start Date</label>
+                        <input type="date" id="custom-start" onchange="renderReport()" class="w-full mt-1 p-2 border rounded-lg text-sm">
+                    </div>
+                    <div class="flex-1">
+                        <label class="text-xs font-bold text-gray-500">End Date</label>
+                        <input type="date" id="custom-end" onchange="renderReport()" class="w-full mt-1 p-2 border rounded-lg text-sm">
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 mb-6">
+                    <div class="text-center mb-6">
+                        <span id="report-total" class="text-4xl font-black text-gray-800">0</span>
+                        <p class="text-gray-500 font-medium text-sm">Items Managed</p>
+                    </div>
+                    <div class="h-8 flex rounded-full overflow-hidden shadow-inner bg-gray-100 mb-4">
+                        <div id="report-bar-eaten" class="bg-green-500 transition-all duration-1000 ease-out" style="width: 0%"></div>
+                        <div id="report-bar-wasted" class="bg-red-500 transition-all duration-1000 ease-out" style="width: 0%"></div>
+                    </div>
+                    <div class="flex justify-between font-bold text-sm">
+                        <div class="flex items-center gap-2 text-green-600"><div class="w-3 h-3 rounded-full bg-green-500"></div>Eaten (<span id="report-pct-eaten">0</span>%)</div>
+                        <div class="flex items-center gap-2 text-red-600">Wasted (<span id="report-pct-wasted">0</span>%)<div class="w-3 h-3 rounded-full bg-red-500"></div></div>
+                    </div>
+                </div>
+
+                <h3 class="font-bold text-gray-700 mb-3 ml-1">Recent Activity</h3>
+                <div id="report-history" class="space-y-3"></div>
+            </div>
+
+        </div>
+
+        <!-- Mobile Bottom Navigation -->
+        <div id="mobile-nav" class="fixed bottom-0 w-full max-w-md bg-white border-t border-gray-100 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] flex justify-between px-2 p-3 pb-safe z-20 rounded-t-2xl transition-all duration-300">
+            <button onclick="switchTab('kitchen')" class="nav-btn-mob flex flex-col items-center justify-center w-16 gap-1" data-tab="kitchen">
+                <div class="icon-bg p-2 rounded-2xl transition-all bg-orange-100 text-orange-600"><i data-lucide="search" class="w-5 h-5"></i></div>
+                <span class="text-[10px] font-bold text-orange-600">Kitchen</span>
+            </button>
+            <button onclick="switchTab('input')" class="nav-btn-mob flex flex-col items-center justify-center w-16 gap-1 -mt-6" data-tab="input">
+                <div class="icon-bg transition-all bg-orange-500 text-white shadow-lg w-14 h-14 rounded-full flex items-center justify-center"><i data-lucide="plus-circle" class="w-6 h-6"></i></div>
+            </button>
+            <button onclick="switchTab('decide')" class="nav-btn-mob flex flex-col items-center justify-center w-16 gap-1" data-tab="decide">
+                <div class="icon-bg p-2 rounded-2xl transition-all text-gray-400"><i data-lucide="chef-hat" class="w-5 h-5"></i></div>
+                <span class="text-[10px] font-bold text-gray-400">Decide</span>
+            </button>
+            <button onclick="switchTab('report')" class="nav-btn-mob flex flex-col items-center justify-center w-16 gap-1" data-tab="report">
+                <div class="icon-bg p-2 rounded-2xl transition-all text-gray-400"><i data-lucide="bar-chart-3" class="w-5 h-5"></i></div>
+                <span class="text-[10px] font-bold text-gray-400">Report</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Image Modal container (injected dynamically) -->
+<div id="modal-container"></div>
+
+<script>
+// --- CONSTANTS & DATA ---
+const FOOD_DICTIONARY = [
+  { en: "Apple", es: "Manzana" }, { en: "Rice", es: "Arroz" }, { en: "Chicken", es: "Pollo" },
+  { en: "Beans", es: "Frijoles" }, { en: "Banana", es: "Plátano" }, { en: "Bread", es: "Pan" },
+  { en: "Cheese", es: "Queso" }, { en: "Milk", es: "Leche" }, { en: "Eggs", es: "Huevos" },
+  { en: "Pasta", es: "Pasta" }, { en: "Pizza", es: "Pizza" }, { en: "Soup", es: "Sopa" },
+  { en: "Beef", es: "Carne de res" }, { en: "Pork", es: "Cerdo" }, { en: "Fish", es: "Pescado" },
+  { en: "Potato", es: "Papa" }, { en: "Tomato", es: "Tomate" }, { en: "Onion", es: "Cebolla" },
+  { en: "Carrot", es: "Zanahoria" }, { en: "Broccoli", es: "Brócoli" }, { en: "Yogurt", es: "Yogur" },
+  { en: "Oats", es: "Avena" }, { en: "Nuts", es: "Nueces" }, { en: "Salad", es: "Ensalada" }
+];
+const PREP_TIMES = ['<5 mins', '6-15 mins', '>15 mins'];
+const PREP_TIME_VALUES = { '<5 mins': 5, '6-15 mins': 15, '>15 mins': 999 };
+const COOKED_SHELF_LIFE = { 'Meat': 4, 'Fish': 2, 'Poultry': 4, 'Side': 4, 'All-in-one meal': 4, 'default': 4 };
+
+// --- STATE ---
+let inventory = JSON.parse(localStorage.getItem('kitchen_buddy_inventory')) || [];
+let currentTab = 'kitchen';
+let desktopMode = false;
+
+// Form State
+let formData = {
+    name: '', state: '', type: '', cookedDate: '', cookedTime: '', expirationDate: '',
+    sideSnackTypes: [], hungerRating: 3, nutritionRating: 3, hasPrepTime: false, prepTime: '', images: []
+};
+
+// Kitchen State
+let kitchenFilter = 'Cooked';
+let expandedItemId = null;
+
+// Decide State
+let decideHunger = 'Meal';
+let decideMaxPrep = '>15 mins';
+let decideSuggestions = [];
+let decideIndex = 0;
+
+// Report State
+let reportTimeRange = 30;
+
+// --- UTILITIES ---
+function saveInventory() {
+    localStorage.setItem('kitchen_buddy_inventory', JSON.stringify(inventory));
+}
+
+function getActiveInventory() {
+    return inventory.filter(i => !i.status || i.status === 'active');
+}
+
+function getPastInventory() {
+    return inventory.filter(i => i.status === 'eaten' || i.status === 'thrown_out');
+}
+
+function getExpirationStatus(item) {
+    const today = new Date(); today.setHours(0,0,0,0);
+    const todayMs = today.getTime();
+    if (item.state === 'Cooked') {
+        if (!item.cookedDate) return { expired: false, daysLeft: 999 };
+        const cooked = new Date(item.cookedDate);
+        let lifeDays = COOKED_SHELF_LIFE[item.type] || COOKED_SHELF_LIFE['default'];
+        if (item.name.toLowerCase().includes('fish') || item.name.toLowerCase().includes('pescado')) lifeDays = 2;
+        const expDate = cooked.getTime() + (lifeDays * 24 * 60 * 60 * 1000);
+        const daysLeft = Math.ceil((expDate - todayMs) / (1000 * 60 * 60 * 24));
+        return { expired: daysLeft < 0, daysLeft };
+    } else {
+        if (!item.expirationDate) return { expired: false, daysLeft: 999 };
+        const exp = new Date(item.expirationDate).getTime();
+        const daysLeft = Math.ceil((exp - todayMs) / (1000 * 60 * 60 * 24));
+        return { expired: daysLeft < 0, daysLeft };
+    }
+}
+
+function compressImage(file) {
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let width = img.width, height = img.height;
+                if (width > height) { if (width > 400) { height *= 400 / width; width = 400; } } 
+                else { if (height > 400) { width *= 400 / height; height = 400; } }
+                canvas.width = width; canvas.height = height;
+                canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+                resolve(canvas.toDataURL('image/jpeg', 0.6));
+            };
+            img.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+function shuffleArray(array) {
+    let newArr = [...array];
+    for (let i = newArr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [newArr[i], newArr[j]] = [newArr[j], newArr[i]];
+    }
+    return newArr;
+}
+
+// --- INIT & NAVIGATION ---
+window.onload = () => {
+    switchTab('kitchen');
+    setupFormListeners();
+    lucide.createIcons();
+};
+
+function toggleDesktopMode() {
+    desktopMode = !desktopMode;
+    const root = document.getElementById('app-root');
+    const container = document.getElementById('main-container');
+    const header = document.getElementById('header');
+    const desktopNav = document.getElementById('desktop-nav');
+    const mobileNav = document.getElementById('mobile-nav');
+    const headerIcon = document.getElementById('header-icon');
+    const headerTitle = document.getElementById('header-title');
+    const toggleIcon = document.getElementById('desktop-toggle-icon');
+    const contentArea = document.getElementById('content-area');
+    
+    if (desktopMode) {
+        root.classList.add('p-6');
+        container.className = "mx-auto bg-white shadow-xl overflow-hidden max-w-6xl rounded-3xl border border-orange-100 flex h-[90vh] relative";
+        header.className = "bg-orange-50 p-6 flex flex-col border-r border-orange-100 relative w-64 z-10 transition-all duration-300";
+        header.querySelector('.flex.items-center.gap-2').classList.remove('text-white');
+        header.querySelector('.flex.items-center.gap-2').classList.add('text-orange-600');
+        headerIcon.classList.remove('w-7', 'h-7'); headerIcon.classList.add('w-10', 'h-10');
+        headerTitle.classList.remove('text-xl'); headerTitle.classList.add('text-2xl');
+        document.getElementById('desktop-toggle-btn').className = "p-2 rounded-full transition-colors absolute bottom-6 left-6 bg-orange-200 text-orange-800 hover:bg-orange-300";
+        desktopNav.classList.remove('hidden'); desktopNav.classList.add('flex');
+        mobileNav.classList.add('hidden');
+        contentArea.classList.add('p-8', 'bg-[#FAFAFA]');
+        contentArea.classList.remove('pb-20');
+        document.getElementById('input-container-inner').classList.add('max-w-2xl');
+        toggleIcon.setAttribute('data-lucide', 'smartphone');
+    } else {
+        root.classList.remove('p-6');
+        container.className = "mx-auto bg-white shadow-xl overflow-hidden max-w-md w-full min-h-screen flex flex-col relative pb-20";
+        header.className = "bg-orange-400 text-white p-4 shadow-md flex justify-between items-center z-10 transition-all duration-300";
+        header.querySelector('.flex.items-center.gap-2').classList.remove('text-orange-600');
+        header.querySelector('.flex.items-center.gap-2').classList.add('text-white');
+        headerIcon.classList.remove('w-10', 'h-10'); headerIcon.classList.add('w-7', 'h-7');
+        headerTitle.classList.remove('text-2xl'); headerTitle.classList.add('text-xl');
+        document.getElementById('desktop-toggle-btn').className = "p-2 rounded-full transition-colors bg-orange-500 hover:bg-orange-600";
+        desktopNav.classList.add('hidden'); desktopNav.classList.remove('flex');
+        mobileNav.classList.remove('hidden');
+        contentArea.classList.remove('p-8', 'bg-[#FAFAFA]');
+        document.getElementById('input-container-inner').classList.remove('max-w-2xl');
+        toggleIcon.setAttribute('data-lucide', 'monitor');
+    }
+    lucide.createIcons();
+    // Re-render current tab if needed to adjust classes, though mostly CSS handled
+}
+
+function switchTab(tab) {
+    currentTab = tab;
+    // Hide all
+    ['input', 'kitchen', 'decide', 'report'].forEach(t => {
+        document.getElementById(`tab-${t}`).classList.add('hidden');
+    });
+    // Show current
+    document.getElementById(`tab-${tab}`).classList.remove('hidden');
+
+    // Update Nav Styles Mobile
+    document.querySelectorAll('.nav-btn-mob').forEach(btn => {
+        const isHighlight = btn.querySelector('.icon-bg').classList.contains('rounded-full');
+        const iconBg = btn.querySelector('.icon-bg');
+        const textSpan = btn.querySelector('span');
+        
+        if (btn.dataset.tab === tab) {
+            if(!isHighlight) {
+                iconBg.className = "icon-bg p-2 rounded-2xl transition-all bg-orange-100 text-orange-600";
+                if(textSpan) textSpan.className = "text-[10px] font-bold text-orange-600";
+            }
+        } else {
+            if(!isHighlight) {
+                iconBg.className = "icon-bg p-2 rounded-2xl transition-all text-gray-400";
+                if(textSpan) textSpan.className = "text-[10px] font-bold text-gray-400";
+            }
+        }
+    });
+
+    // Update Nav Styles Desktop
+    document.querySelectorAll('.desk-nav-btn').forEach(btn => {
+        if(btn.id === `desk-nav-${tab}`) {
+            btn.className = "desk-nav-btn flex items-center gap-3 p-3 rounded-xl font-semibold transition-all bg-orange-500 text-white shadow-md";
+        } else {
+            btn.className = "desk-nav-btn flex items-center gap-3 p-3 rounded-xl font-semibold transition-all text-orange-700 hover:bg-orange-100";
+        }
+    });
+
+    // Call specific renders
+    if (tab === 'kitchen') renderKitchen();
+    if (tab === 'decide') renderDecide();
+    if (tab === 'report') renderReport();
+    
+    lucide.createIcons();
+}
+
+// --- TAB: INPUT LOGIC ---
+let searchTimeout = null;
+
+function setupFormListeners() {
+    const updateFormUI = () => {
+        // State buttons
+        document.querySelectorAll('.state-btn').forEach(btn => {
+            if(btn.dataset.val === formData.state) {
+                btn.className = "state-btn py-3 px-2 rounded-xl border-2 font-bold text-sm transition-all flex flex-col items-center gap-1 bg-orange-100 border-orange-500 text-orange-700";
+            } else {
+                btn.className = "state-btn py-3 px-2 rounded-xl border-2 font-bold text-sm transition-all flex flex-col items-center gap-1 bg-white border-gray-100 text-gray-500 hover:border-orange-200";
+            }
+        });
+        document.getElementById('cooked-fields').classList.toggle('hidden', formData.state !== 'Cooked');
+        document.getElementById('expiration-fields').classList.toggle('hidden', formData.state !== 'Frozen' && formData.state !== 'Packaged');
+
+        // Type buttons
+        document.querySelectorAll('.type-btn').forEach(btn => {
+            if(btn.dataset.val === formData.type) {
+                btn.className = "type-btn py-3 px-4 rounded-xl border-2 font-bold text-sm transition-all flex items-center gap-2 bg-orange-500 border-orange-600 text-white shadow-md";
+            } else {
+                btn.className = "type-btn py-3 px-4 rounded-xl border-2 font-bold text-sm transition-all flex items-center gap-2 bg-white border-gray-100 text-gray-600 hover:border-orange-200";
+            }
+        });
+
+        // Time buttons
+        document.querySelectorAll('.time-btn').forEach(btn => {
+            btn.className = btn.dataset.val === formData.cookedTime 
+                ? "time-btn flex-1 py-2 rounded-lg text-sm font-semibold transition-colors bg-orange-400 text-white"
+                : "time-btn flex-1 py-2 rounded-lg text-sm font-semibold transition-colors bg-white border border-gray-200 text-gray-600";
+        });
+
+        const isSideOrSnack = formData.type === 'Side' || formData.type === 'Snack';
+        document.getElementById('attribute-fields').classList.toggle('hidden', !isSideOrSnack);
+        document.getElementById('prep-fields').classList.toggle('hidden', !(isSideOrSnack || formData.state === 'Frozen'));
+
+        // Attributes
+        document.querySelectorAll('.attr-btn').forEach(btn => {
+            if(formData.sideSnackTypes.includes(btn.dataset.val)) {
+                btn.className = "attr-btn py-2 px-3 rounded-full text-xs font-bold transition-all border bg-green-500 text-white border-green-600 shadow-sm";
+                btn.innerHTML = `<i data-lucide="check-circle-2" class="w-3 h-3 inline mr-1"></i>${btn.dataset.val}`;
+            } else {
+                btn.className = "attr-btn py-2 px-3 rounded-full text-xs font-bold transition-all border bg-white text-gray-600 border-gray-200 hover:bg-green-100";
+                btn.innerHTML = btn.dataset.val;
+            }
+        });
+
+        // Prep time
+        document.getElementById('has-prep-time').checked = formData.hasPrepTime;
+        document.getElementById('prep-time-selector').classList.toggle('hidden', !formData.hasPrepTime);
+        document.querySelectorAll('.prep-btn').forEach(btn => {
+            btn.className = btn.dataset.val === formData.prepTime
+                ? "prep-btn flex-1 py-2 rounded-lg text-xs font-bold transition-colors bg-yellow-400 text-yellow-900"
+                : "prep-btn flex-1 py-2 rounded-lg text-xs font-bold transition-colors bg-white border border-gray-200 text-gray-600";
+        });
+        
+        lucide.createIcons();
+    };
+
+    // State clicks
+    document.querySelectorAll('.state-btn').forEach(btn => {
+        btn.onclick = () => { formData.state = btn.dataset.val; updateFormUI(); };
+    });
+    // Type clicks
+    document.querySelectorAll('.type-btn').forEach(btn => {
+        btn.onclick = () => { formData.type = btn.dataset.val; formData.sideSnackTypes = []; updateFormUI(); };
+    });
+    // Time clicks
+    document.querySelectorAll('.time-btn').forEach(btn => {
+        btn.onclick = () => { formData.cookedTime = btn.dataset.val; updateFormUI(); };
+    });
+    // Attribute clicks
+    document.querySelectorAll('.attr-btn').forEach(btn => {
+        btn.onclick = () => { 
+            const val = btn.dataset.val;
+            if(formData.sideSnackTypes.includes(val)) formData.sideSnackTypes = formData.sideSnackTypes.filter(t=>t!==val);
+            else formData.sideSnackTypes.push(val);
+            updateFormUI();
+        };
+    });
+    // Prep checks
+    document.getElementById('has-prep-time').onchange = (e) => {
+        formData.hasPrepTime = e.target.checked; updateFormUI();
+    };
+    document.querySelectorAll('.prep-btn').forEach(btn => {
+        btn.onclick = () => { formData.prepTime = btn.dataset.val; updateFormUI(); };
+    });
+
+    // Auto-suggest logic
+    const nameInput = document.getElementById('food-name');
+    const sugBox = document.getElementById('suggestions-box');
+    
+    nameInput.addEventListener('input', (e) => {
+        const val = e.target.value;
+        formData.name = val;
+        if(searchTimeout) clearTimeout(searchTimeout);
+        if(val.length > 2) {
+            searchTimeout = setTimeout(async () => {
+                let matches = [];
+                try {
+                    const res = await fetch(`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(val)}&search_simple=1&action=process&json=1&page_size=5`);
+                    const data = await res.json();
+                    if (data.products && data.products.length > 0) {
+                        matches = data.products.map(p => ({ en: p.product_name, source: 'api' })).filter(p => p.en);
+                    }
+                } catch(e) {}
+                
+                if (matches.length === 0) {
+                    matches = FOOD_DICTIONARY.filter(f => f.en.toLowerCase().includes(val.toLowerCase()) || f.es.toLowerCase().includes(val.toLowerCase()));
+                }
+                
+                if(matches.length > 0) {
+                    sugBox.innerHTML = matches.map(s => `
+                        <div class="p-3 hover:bg-orange-50 cursor-pointer text-gray-700 font-medium flex justify-between" onclick="selectSuggestion('${(s.en).replace(/'/g, "\\'")}', '${s.es ? s.es.replace(/'/g, "\\'") : ''}')">
+                            <span>${s.en} ${s.es ? `<span class="text-gray-400 text-sm ml-1">(${s.es})</span>` : ''}</span>
+                            ${s.source === 'api' ? `<span class="text-[10px] bg-blue-100 text-blue-600 px-2 py-1 rounded-md">Live DB</span>` : ''}
+                        </div>
+                    `).join('');
+                    sugBox.classList.remove('hidden');
+                } else {
+                    sugBox.classList.add('hidden');
+                }
+            }, 400);
+        } else {
+            sugBox.classList.add('hidden');
+        }
+    });
+
+    nameInput.addEventListener('blur', () => { setTimeout(()=> sugBox.classList.add('hidden'), 200); });
+
+    // Images
+    document.getElementById('image-upload').addEventListener('change', async (e) => {
+        const files = Array.from(e.target.files);
+        for(let file of files) {
+            if(formData.images.length < 3) {
+                const b64 = await compressImage(file);
+                formData.images.push(b64);
+            }
+        }
+        renderImagePreviews();
+    });
+}
+
+function selectSuggestion(en, es) {
+    formData.name = es ? `${en} (${es})` : en;
+    document.getElementById('food-name').value = formData.name;
+    document.getElementById('suggestions-box').classList.add('hidden');
+}
+
+function removeImage(idx) {
+    formData.images.splice(idx, 1);
+    renderImagePreviews();
+}
+
+function renderImagePreviews() {
+    const container = document.getElementById('image-preview-container');
+    // keep only the add button, remove existing previews
+    const addBtn = document.getElementById('add-photo-btn');
+    container.innerHTML = '';
+    
+    formData.images.forEach((img, idx) => {
+        const div = document.createElement('div');
+        div.className = "relative w-20 h-20 flex-shrink-0";
+        div.innerHTML = `
+            <img src="${img}" class="w-full h-full object-cover rounded-xl border border-gray-200" />
+            <button type="button" onclick="removeImage(${idx})" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md">
+                <i data-lucide="x" class="w-3 h-3"></i>
+            </button>
+        `;
+        container.appendChild(div);
+    });
+    
+    if(formData.images.length < 3) container.appendChild(addBtn);
+    lucide.createIcons();
+}
+
+function handleFormSubmit(e) {
+    e.preventDefault();
+    const errBox = document.getElementById('form-error');
+    errBox.classList.add('hidden');
+    
+    formData.name = document.getElementById('food-name').value;
+    formData.cookedDate = document.getElementById('cooked-date').value;
+    formData.expirationDate = document.getElementById('expiration-date').value;
+    formData.hungerRating = parseInt(document.getElementById('hunger-rating').value);
+    formData.nutritionRating = parseInt(document.getElementById('nutrition-rating').value);
+
+    if (!formData.name) { errBox.innerText = "Food name is required"; errBox.classList.remove('hidden'); return; }
+    if (!formData.state) { errBox.innerText = "Please select storage state"; errBox.classList.remove('hidden'); return; }
+    if (!formData.type) { errBox.innerText = "Please select food type"; errBox.classList.remove('hidden'); return; }
+    if ((formData.type === 'Side' || formData.type === 'Snack') && formData.sideSnackTypes.length === 0) {
+        errBox.innerText = "Select at least one attribute for Side/Snack"; errBox.classList.remove('hidden'); return;
+    }
+
+    const newItem = { id: Date.now().toString(), ...formData, status: 'active', createdAt: new Date().toISOString() };
+    inventory.push(newItem);
+    saveInventory();
+    
+    // Reset form
+    formData = { name: '', state: '', type: '', cookedDate: '', cookedTime: '', expirationDate: '', sideSnackTypes: [], hungerRating: 3, nutritionRating: 3, hasPrepTime: false, prepTime: '', images: [] };
+    document.getElementById('add-food-form').reset();
+    document.getElementById('hunger-val').innerText = '3';
+    document.getElementById('nutrition-val').innerText = '3';
+    renderImagePreviews();
+    setupFormListeners(); // refresh UI state
+    
+    switchTab('kitchen');
+}
+
+// --- TAB: KITCHEN LOGIC ---
+function setKitchenFilter(f) {
+    kitchenFilter = f;
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        if(btn.id === `filter-${f}`) {
+            btn.className = "filter-btn flex-1 py-2 text-sm font-bold rounded-xl transition-all bg-white text-orange-600 shadow-sm";
+        } else {
+            btn.className = "filter-btn flex-1 py-2 text-sm font-bold rounded-xl transition-all text-gray-500 hover:text-gray-700";
+        }
+    });
+    renderKitchen();
+}
+
+function getIconHtml(type) {
+    switch(type) {
+      case 'All-in-one meal': return `<i data-lucide="utensils-crossed" class="w-6 h-6 text-indigo-500"></i>`;
+      case 'Meat': return `<i data-lucide="drumstick" class="w-6 h-6 text-red-500"></i>`;
+      case 'Side': return `<i data-lucide="salad" class="w-6 h-6 text-green-500"></i>`;
+      case 'Snack': return `<i data-lucide="cookie" class="w-6 h-6 text-yellow-600"></i>`;
+      default: return `<i data-lucide="utensils-crossed" class="w-6 h-6 text-gray-500"></i>`;
+    }
+}
+
+function handleFoodAction(id, action) {
+    inventory = inventory.map(item => item.id === id ? { ...item, status: action, actionDate: new Date().toISOString() } : item);
+    saveInventory();
+    expandedItemId = null;
+    if(currentTab === 'kitchen') renderKitchen();
+}
+
+function renderKitchen() {
+    const list = document.getElementById('kitchen-list');
+    const activeInv = getActiveInventory();
+    let filtered = activeInv.filter(item => item.state === kitchenFilter);
+    
+    filtered.sort((a, b) => {
+      if (kitchenFilter === 'Cooked') {
+        const dateA = new Date(a.cookedDate || '2099-01-01').getTime();
+        const dateB = new Date(b.cookedDate || '2099-01-01').getTime();
+        if (dateA !== dateB) return dateA - dateB;
+      } else {
+        const dateA = new Date(a.expirationDate || '2099-01-01').getTime();
+        const dateB = new Date(b.expirationDate || '2099-01-01').getTime();
+        if (dateA !== dateB) return dateA - dateB;
+      }
+      return (b.nutritionRating || 0) - (a.nutritionRating || 0);
+    });
+
+    if(filtered.length === 0) {
+        list.innerHTML = `
+            <div class="text-center py-12 text-gray-400 font-medium">
+                <i data-lucide="search" class="w-12 h-12 mx-auto mb-3 opacity-20"></i>
+                <p>No ${kitchenFilter.toLowerCase()} food found.</p>
+            </div>`;
+    } else {
+        list.innerHTML = filtered.map(item => {
+            const { expired, daysLeft } = getExpirationStatus(item);
+            const isWarning = daysLeft >= 0 && daysLeft <= 1;
+            const isExpanded = expandedItemId === item.id;
+            
+            let statusText = `<span class="text-gray-500">${kitchenFilter === 'Cooked' ? `Cooked: ${item.cookedDate || 'Unknown'}` : `Expires: ${item.expirationDate || 'Unknown'}`}</span>`;
+            if (expired) statusText = `<span class="text-red-600 font-bold">Expired / Too Old!</span>`;
+            else if (isWarning) statusText = `<span class="text-yellow-600 font-bold">Eat Soon! (1 day left)</span>`;
+
+            let borderClass = expired ? 'border-red-300 bg-red-50/20' : isWarning ? 'border-yellow-300 bg-yellow-50/20' : 'border-gray-100 bg-white';
+            let iconBg = expired ? 'bg-red-100' : isWarning ? 'bg-yellow-100' : 'bg-gray-50';
+            
+            let detailsHtml = '';
+            if (isExpanded) {
+                const attrs = item.sideSnackTypes?.map(t => `<span class="bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-[10px] font-bold">${t}</span>`).join('') || '';
+                const imgs = item.images?.map((img, i) => `<img src="${img}" class="w-16 h-16 rounded-lg object-cover cursor-pointer border border-gray-200 hover:opacity-80" onclick="openImageModal('${item.id}')" />`).join('') || '';
+                
+                detailsHtml = `
+                    <div class="p-4 bg-gray-50/80 border-t border-gray-100 text-sm grid gap-4 animate-fade-in cursor-default" onclick="event.stopPropagation()">
+                        <div class="grid grid-cols-2 gap-2 text-gray-700">
+                            <div><span class="font-bold">Type:</span> ${item.type}</div>
+                            <div><span class="font-bold text-green-600 flex items-center gap-1"><i data-lucide="star" class="w-3 h-3"></i> Nutrition: ${item.nutritionRating}/5</span></div>
+                            ${item.cookedTime ? `<div><span class="font-bold">Time Cooked:</span> ${item.cookedTime}</div>` : ''}
+                            ${item.prepTime ? `<div><span class="font-bold">Prep Time:</span> ${item.prepTime}</div>` : ''}
+                        </div>
+                        ${attrs ? `<div><span class="font-bold text-gray-700 text-xs block mb-1">Attributes:</span><div class="flex flex-wrap gap-1">${attrs}</div></div>` : ''}
+                        ${imgs ? `<div><span class="font-bold text-gray-700 text-xs block mb-2">Photos:</span><div class="flex gap-2">${imgs}</div></div>` : ''}
+                        <div class="flex gap-2 pt-2 mt-2 border-t border-gray-200">
+                            <button onclick="handleFoodAction('${item.id}', 'eaten')" class="flex-1 py-2 bg-green-500 text-white hover:bg-green-600 rounded-xl font-bold flex items-center justify-center gap-2 shadow-sm"><i data-lucide="check" class="w-4 h-4"></i> I Ate It!</button>
+                            <button onclick="handleFoodAction('${item.id}', 'thrown_out')" class="flex-1 py-2 bg-red-100 text-red-600 hover:bg-red-200 rounded-xl font-bold flex items-center justify-center gap-2"><i data-lucide="trash-2" class="w-4 h-4"></i> Threw It Out</button>
+                        </div>
+                    </div>`;
+            }
+
+            return `
+                <div class="border rounded-2xl shadow-sm hover:shadow-md transition-all overflow-hidden ${borderClass}">
+                    <div class="p-4 flex items-center justify-between cursor-pointer relative" onclick="toggleExpand('${item.id}')">
+                        <div class="flex items-center gap-4">
+                            <div class="p-2 rounded-xl ${iconBg}">
+                                ${expired ? `<i data-lucide="alert-triangle" class="w-6 h-6 text-red-500"></i>` : getIconHtml(item.type)}
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-lg leading-tight ${expired ? 'text-red-700' : 'text-gray-800'}">${item.name}</h3>
+                                <div class="text-xs font-medium mt-1 flex gap-2">${statusText}</div>
+                            </div>
+                        </div>
+                        <i data-lucide="chevron-down" class="w-5 h-5 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}"></i>
+                    </div>
+                    ${detailsHtml}
+                </div>`;
+        }).join('');
+    }
+    lucide.createIcons();
+}
+
+function toggleExpand(id) {
+    expandedItemId = expandedItemId === id ? null : id;
+    renderKitchen();
+}
+
+function openImageModal(id) {
+    const item = inventory.find(i => i.id === id);
+    if(!item || !item.images) return;
+    const modalHtml = `
+        <div class="fixed inset-0 bg-black/80 z-50 flex flex-col items-center justify-center p-4" onclick="document.getElementById('modal-container').innerHTML = ''">
+            <div class="flex gap-4 overflow-x-auto snap-x w-full max-w-3xl" onclick="event.stopPropagation()">
+                ${item.images.map(img => `<img src="${img}" class="max-h-[80vh] w-auto snap-center rounded-lg shadow-2xl" />`).join('')}
+            </div>
+            <p class="text-white mt-4 font-bold text-sm bg-black/50 px-4 py-2 rounded-full">Tap anywhere else to close</p>
+        </div>`;
+    document.getElementById('modal-container').innerHTML = modalHtml;
+}
+
+
+// --- TAB: DECIDE LOGIC ---
+function setDecideHunger(h) {
+    decideHunger = h;
+    document.getElementById('decide-hunger-Meal').className = h === 'Meal' ? "flex-1 py-2 font-bold rounded-lg transition-all bg-white text-orange-600 shadow-md" : "flex-1 py-2 font-bold rounded-lg transition-all text-orange-100 hover:text-white";
+    document.getElementById('decide-hunger-Snack').className = h === 'Snack' ? "flex-1 py-2 font-bold rounded-lg transition-all bg-white text-orange-600 shadow-md" : "flex-1 py-2 font-bold rounded-lg transition-all text-orange-100 hover:text-white";
+}
+
+function setDecidePrep(p) {
+    decideMaxPrep = p;
+    // Map string values to explicit element IDs
+    const prepIdMap = {
+        '<5 mins': 'decide-prep-5',
+        '6-15 mins': 'decide-prep-15',
+        '>15 mins': 'decide-prep-999'
+    };
+    
+    ['<5 mins', '6-15 mins', '>15 mins'].forEach(val => {
+        const btn = document.getElementById(prepIdMap[val]);
+        if (btn) {
+            btn.className = val === p 
+                ? "flex-1 py-2 text-xs font-bold rounded-lg border-2 transition-all bg-yellow-400 border-yellow-400 text-yellow-900 shadow-md"
+                : "flex-1 py-2 text-xs font-bold rounded-lg border-2 transition-all bg-transparent border-orange-400 text-orange-100 hover:border-orange-300";
+        }
+    });
+}
+
+function generateSuggestions() {
+    const btn = document.getElementById('generate-btn');
+    btn.innerHTML = `<i data-lucide="refresh-cw" class="animate-spin"></i> Cooking up ideas...`;
+    btn.disabled = true;
+    lucide.createIcons();
+
+    setTimeout(() => {
+        const activeInv = getActiveInventory();
+        const safeInventory = activeInv.filter(i => !getExpirationStatus(i).expired);
+        const validCombos = [];
+        const userMaxPrepVal = PREP_TIME_VALUES[decideMaxPrep] || 999;
+
+        const getPrepTime = (item) => {
+            if (item.hasPrepTime && item.prepTime) return PREP_TIME_VALUES[item.prepTime];
+            if (item.state === 'Cooked' || item.state === 'Packaged') return 5;
+            return 15;
+        };
+
+        if (decideHunger === 'Meal') {
+            const allInOnes = safeInventory.filter(i => i.type === 'All-in-one meal' && getPrepTime(i) <= userMaxPrepVal);
+            const meats = safeInventory.filter(i => i.type === 'Meat');
+            const sides = safeInventory.filter(i => i.type === 'Side');
+            const carbSides = sides.filter(i => i.sideSnackTypes?.includes('Simple Carb') || i.sideSnackTypes?.includes('Complex Carb'));
+            const veggieSides = sides.filter(i => i.sideSnackTypes?.includes('Veggie') || i.sideSnackTypes?.includes('Fruit'));
+
+            allInOnes.forEach(item => {
+                validCombos.push({ items: [item], nutrition: item.nutritionRating || 3, prepVal: getPrepTime(item), prepLabel: item.prepTime || '<5 mins' });
+            });
+
+            const shuffledMeats = shuffleArray(meats).slice(0, 10);
+            const shuffledCarbs = shuffleArray(carbSides).slice(0, 10);
+            const shuffledVeggies = shuffleArray(veggieSides).slice(0, 10);
+
+            for(let m of shuffledMeats) {
+                for(let c of shuffledCarbs) {
+                    for(let v of shuffledVeggies) {
+                        if (c.id === v.id) continue;
+                        const totalPrep = Math.max(getPrepTime(m), getPrepTime(c), getPrepTime(v));
+                        if (totalPrep <= userMaxPrepVal) {
+                            validCombos.push({
+                                items: [m, c, v], nutrition: ((m.nutritionRating||3) + (c.nutritionRating||3) + (v.nutritionRating||3)) / 3,
+                                prepVal: totalPrep, prepLabel: totalPrep <= 5 ? '<5 mins' : totalPrep <= 15 ? '6-15 mins' : '>15 mins'
+                            });
+                        }
+                    }
+                }
+            }
+        } else {
+            const snackPool = safeInventory.filter(i => (i.type === 'Snack' || i.type === 'Side') && getPrepTime(i) <= userMaxPrepVal);
+            const shuffled = shuffleArray(snackPool);
+            for (let i = 0; i < shuffled.length; i++) {
+                for (let j = i + 1; j < Math.min(shuffled.length, i + 15); j++) {
+                    const item1 = shuffled[i], item2 = shuffled[j];
+                    const t1 = item1.sideSnackTypes || [], t2 = item2.sideSnackTypes || [];
+                    const hasOverlap = t1.some(t => t2.includes(t));
+                    if (!hasOverlap && (t1.length > 0 || t2.length > 0)) {
+                        const totalPrep = Math.max(getPrepTime(item1), getPrepTime(item2));
+                        if (totalPrep <= userMaxPrepVal) {
+                            validCombos.push({
+                                items: [item1, item2], nutrition: ((item1.nutritionRating||3) + (item2.nutritionRating||3)) / 2,
+                                prepVal: totalPrep, prepLabel: totalPrep <= 5 ? '<5 mins' : totalPrep <= 15 ? '6-15 mins' : '>15 mins'
+                            });
+                        }
+                    }
+                }
+            }
+        }
+
+        validCombos.sort((a, b) => b.nutrition - a.nutrition);
+        const uniqueCombos = []; const seenSigs = new Set();
+        for (const combo of validCombos) {
+            const sig = combo.items.map(i => i.id).sort().join('|');
+            if (!seenSigs.has(sig)) { seenSigs.add(sig); uniqueCombos.push(combo); }
+        }
+
+        decideSuggestions = uniqueCombos;
+        decideIndex = 0;
+        
+        btn.innerHTML = `<i data-lucide="search"></i> Find Food!`;
+        btn.disabled = false;
+        renderDecideResults();
+    }, 600);
+}
+
+function nextSuggestions() {
+    decideIndex = (decideIndex + 3 >= decideSuggestions.length) ? 0 : decideIndex + 3;
+    renderDecideResults();
+}
+
+function renderDecide() {
+    const activeInv = getActiveInventory();
+    const safeInventory = activeInv.filter(i => !getExpirationStatus(i).expired);
+    const generateBtn = document.getElementById('generate-btn');
+    const emptyState = document.getElementById('decide-empty-state');
+    
+    if(safeInventory.length === 0) {
+        generateBtn.disabled = true;
+        if(activeInv.length > 0) {
+            emptyState.innerHTML = `<div class="text-center text-red-500 mt-10 p-6 bg-red-50 rounded-2xl border border-red-100"><i data-lucide="alert-triangle" class="w-12 h-12 mx-auto mb-2 opacity-50"></i><p class="font-bold">Only expired food is left!</p><p class="text-sm mt-1">Clean out your kitchen and add fresh items.</p></div>`;
+        } else {
+            emptyState.innerHTML = `<div class="text-center text-orange-500 mt-10 p-6 bg-orange-50 rounded-2xl border border-orange-100"><p class="font-bold">Your kitchen is empty!</p><p class="text-sm mt-1">Add some food items first to get suggestions.</p></div>`;
+        }
+    } else {
+        generateBtn.disabled = false;
+        emptyState.innerHTML = `<p>Hit the button above to get ideas based on your kitchen!</p>`;
+    }
+    renderDecideResults();
+}
+
+function renderDecideResults() {
+    const container = document.getElementById('decide-results');
+    const currentDisplay = decideSuggestions.slice(decideIndex, decideIndex + 3);
+    const emptyState = document.getElementById('decide-empty-state');
+
+    if(decideSuggestions.length > 0) emptyState.classList.add('hidden');
+    else emptyState.classList.remove('hidden');
+
+    if (decideSuggestions.length === 0) {
+        container.innerHTML = '';
+        return;
+    }
+
+    let html = `
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xl font-black text-gray-800">My Suggestions:</h3>
+            <button onclick="nextSuggestions()" class="text-orange-500 font-bold flex items-center gap-1 text-sm bg-orange-100 px-3 py-1.5 rounded-full hover:bg-orange-200 transition-colors">
+                <i data-lucide="refresh-cw" class="w-4 h-4"></i> Next 3
+            </button>
+        </div>
+        <div class="space-y-4">`;
+        
+    if(currentDisplay.length === 0) html += `<p class="text-center text-gray-500 py-8 font-medium">No more unique combinations found.</p>`;
+    else {
+        html += currentDisplay.map((combo, idx) => `
+            <div class="bg-white rounded-2xl p-5 border-2 border-orange-100 shadow-sm hover:shadow-md transition-shadow">
+                <div class="flex justify-between items-start mb-3">
+                    <div class="flex items-center gap-2 text-xs font-bold bg-green-100 text-green-700 px-2 py-1 rounded-md">
+                        <i data-lucide="star" class="w-3 h-3"></i> Nutrition: ${combo.nutrition.toFixed(1)}/5
+                    </div>
+                    <div class="flex items-center gap-1 text-xs font-bold text-gray-500">
+                        <i data-lucide="clock" class="w-3 h-3"></i> ~${combo.prepLabel}
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    ${combo.items.map(item => `
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-orange-50 flex items-center justify-center text-orange-500 shrink-0">
+                                ${item.type === 'All-in-one meal' ? `<i data-lucide="utensils-crossed" class="w-4 h-4"></i>` : item.type === 'Meat' ? `<i data-lucide="drumstick" class="w-4 h-4"></i>` : item.type === 'Side' ? `<i data-lucide="salad" class="w-4 h-4"></i>` : `<i data-lucide="cookie" class="w-4 h-4"></i>`}
+                            </div>
+                            <span class="font-bold text-gray-800">${item.name}</span>
+                            <span class="text-xs text-gray-400 ml-auto border border-gray-200 px-2 py-0.5 rounded-full">${item.state}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `).join('');
+    }
+    html += `</div>`;
+    container.innerHTML = html;
+    lucide.createIcons();
+}
+
+// --- TAB: REPORT LOGIC ---
+function setReportTime(val) {
+    reportTimeRange = val;
+    document.querySelectorAll('#report-time-btns button').forEach(btn => {
+        const isSelected = (val === 'custom' && btn.id === 'rep-btn-custom') || (btn.id === `rep-btn-${val}`);
+        btn.className = isSelected 
+            ? "flex-shrink-0 px-4 py-2 font-bold text-sm rounded-xl transition-all snap-center bg-orange-500 text-white shadow-md"
+            : "flex-shrink-0 px-4 py-2 font-bold text-sm rounded-xl transition-all snap-center text-gray-500 hover:bg-orange-50";
+    });
+    
+    const customFields = document.getElementById('custom-date-fields');
+    if(val === 'custom') customFields.classList.remove('hidden');
+    else customFields.classList.add('hidden');
+    
+    renderReport();
+}
+
+function renderReport() {
+    const pastInv = getPastInventory();
+    let filtered = pastInv;
+    const now = new Date();
+
+    if (reportTimeRange !== 'custom') {
+        const cutoff = new Date(now.getTime() - (reportTimeRange * 24 * 60 * 60 * 1000));
+        filtered = pastInv.filter(i => new Date(i.actionDate) >= cutoff);
+    } else {
+        const cStart = document.getElementById('custom-start').value;
+        const cEnd = document.getElementById('custom-end').value;
+        if (cStart && cEnd) {
+            const start = new Date(cStart);
+            const end = new Date(cEnd); end.setHours(23, 59, 59, 999);
+            filtered = pastInv.filter(i => { const d = new Date(i.actionDate); return d >= start && d <= end; });
+        }
+    }
+
+    const eaten = filtered.filter(i => i.status === 'eaten').length;
+    const wasted = filtered.filter(i => i.status === 'thrown_out').length;
+    const total = eaten + wasted;
+    const eatenPercent = total === 0 ? 0 : Math.round((eaten / total) * 100);
+    const wastedPercent = total === 0 ? 0 : Math.round((wasted / total) * 100);
+
+    document.getElementById('report-total').innerText = total;
+    document.getElementById('report-bar-eaten').style.width = `${eatenPercent}%`;
+    document.getElementById('report-bar-wasted').style.width = `${wastedPercent}%`;
+    document.getElementById('report-pct-eaten').innerText = eatenPercent;
+    document.getElementById('report-pct-wasted').innerText = wastedPercent;
+
+    const historyBox = document.getElementById('report-history');
+    if (filtered.length === 0) {
+        historyBox.innerHTML = `<p class="text-center text-gray-400 py-8 font-medium">No activity for this time period.</p>`;
+    } else {
+        const items = filtered.sort((a,b) => new Date(b.actionDate) - new Date(a.actionDate)).slice(0, 10);
+        historyBox.innerHTML = items.map(item => `
+            <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex justify-between items-center">
+                <div>
+                    <p class="font-bold text-gray-800">${item.name}</p>
+                    <p class="text-[10px] text-gray-400 mt-0.5">${new Date(item.actionDate).toLocaleDateString()}</p>
+                </div>
+                ${item.status === 'eaten' 
+                    ? `<span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1"><i data-lucide="check" class="w-3 h-3"></i> Ate It</span>`
+                    : `<span class="bg-red-100 text-red-600 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1"><i data-lucide="trash-2" class="w-3 h-3"></i> Wasted</span>`
+                }
+            </div>
+        `).join('');
+    }
+    lucide.createIcons();
+}
+
+</script>
+</body>
+</html>
