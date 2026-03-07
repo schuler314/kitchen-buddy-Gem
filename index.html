@@ -379,6 +379,26 @@
     </div>
 </div>
 
+<!-- Local Sync Modal -->
+<div id="local-sync-modal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl relative animate-fade-in">
+        <h2 class="text-xl font-black text-orange-600 mb-4 flex items-center gap-2"><i data-lucide="refresh-cw"></i> Local Data Found</h2>
+        <p class="text-sm text-gray-600 mb-6">We found <span id="local-sync-count" class="font-bold text-orange-600"></span> item(s) saved locally on this device. Would you like to add them to your cloud kitchen?</p>
+        
+        <div class="flex flex-col gap-3">
+            <button onclick="performLocalSync()" id="btn-perform-sync" class="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl shadow-md transition-colors flex justify-center items-center gap-2">
+                <i data-lucide="cloud-upload" class="w-5 h-5"></i> Sync to Cloud
+            </button>
+            <button onclick="discardLocalData()" class="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl transition-colors">
+                Discard Local Data
+            </button>
+            <button onclick="closeLocalSyncModal()" class="w-full py-3 text-gray-400 hover:text-gray-600 font-bold rounded-xl transition-colors text-sm">
+                Decide Later
+            </button>
+        </div>
+    </div>
+</div>
+
 <script>
 // --- SUPABASE CONFIG ---
 const { createClient } = supabase;
@@ -583,11 +603,12 @@ async function handleSession(session) {
         currentHouseholdId = await ensureHousehold(currentUser.id);
         
         authStatus.innerHTML = `<i data-lucide="cloud-check" class="w-3 h-3 text-green-500"></i> Cloud Sync Active`;
-        authBtn.innerHTML = '<i data-lucide="settings" class="w-4 h-4 mr-1"></i> Kitchen';
+        authBtn.innerHTML = '<i data-lucide="users" class="w-4 h-4 mr-1"></i> My Kitchen';
         authBtn.className = "flex items-center px-3 py-1.5 text-xs font-bold rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors shadow-sm whitespace-nowrap";
         authBtn.onclick = toggleHouseholdModal;
         
         await loadData();
+        checkAndPromptLocalSync();
     } else {
         currentUser = null;
         currentHouseholdId = null;
@@ -599,6 +620,60 @@ async function handleSession(session) {
         await loadData();
     }
     lucide.createIcons();
+}
+
+// --- LOCAL SYNC LOGIC ---
+function checkAndPromptLocalSync() {
+    if (!currentUser || !currentHouseholdId) return;
+    
+    let localInv = JSON.parse(localStorage.getItem('kitchen_buddy_inventory')) || [];
+    if (localInv.length > 0) {
+        document.getElementById('local-sync-count').innerText = localInv.length;
+        document.getElementById('local-sync-modal').classList.remove('hidden');
+        lucide.createIcons();
+    }
+}
+
+function closeLocalSyncModal() {
+    document.getElementById('local-sync-modal').classList.add('hidden');
+}
+
+async function performLocalSync() {
+    const btn = document.getElementById('btn-perform-sync');
+    btn.innerHTML = `<i data-lucide="loader-2" class="animate-spin w-5 h-5"></i> Syncing...`;
+    btn.disabled = true;
+    lucide.createIcons();
+    
+    let localInv = JSON.parse(localStorage.getItem('kitchen_buddy_inventory')) || [];
+    let itemsToInsert = localInv.map(item => {
+        const itemId = (item.id && item.id.length >= 32) ? item.id : generateUUID();
+        return {
+            id: itemId,
+            household_id: currentHouseholdId,
+            user_id: currentUser.id,
+            data: { ...item, id: itemId }
+        };
+    });
+
+    const { error } = await supabaseClient.from('food_items').upsert(itemsToInsert);
+    if (!error) {
+        localStorage.removeItem('kitchen_buddy_inventory');
+        closeLocalSyncModal();
+        await loadData();
+    } else {
+        alert("Failed to sync: " + error.message);
+    }
+    
+    btn.innerHTML = `<i data-lucide="cloud-upload" class="w-5 h-5"></i> Sync to Cloud`;
+    btn.disabled = false;
+    lucide.createIcons();
+}
+
+function discardLocalData() {
+    if (confirm("Are you sure you want to permanently delete the local items?")) {
+        localStorage.removeItem('kitchen_buddy_inventory');
+        closeLocalSyncModal();
+    }
 }
 
 // --- HOUSEHOLD MANAGEMENT LOGIC ---
@@ -792,7 +867,7 @@ async function joinHousehold() {
 }
 
 function handleLogout() {
-    if (confirm("Are you sure you want to log out? Local storage mode will resume.")) {
+    if (confirm("Are you sure you want to log out? Local storage mode will resume and only store information on this device.")) {
         closeHouseholdModal();
         supabaseClient.auth.signOut();
     }
