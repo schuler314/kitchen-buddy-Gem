@@ -138,9 +138,9 @@
                             <p class="text-slate-500 dark:text-slate-400 text-sm font-medium mt-1">Record fresh items or leftovers.</p>
                         </div>
                         
-                        <label for="ai-image-upload" class="interactive flex items-center gap-2 px-3 py-2 bg-brand-50 dark:bg-brand-900/30 border border-brand-100 dark:border-brand-800 rounded-full cursor-pointer hover:bg-brand-100 dark:hover:bg-brand-900/50 transition-all shadow-sm">
-                            <i data-lucide="camera" class="w-4 h-4 text-brand-500"></i>
-                            <span class="text-[10px] font-black text-brand-700 dark:text-brand-300 uppercase tracking-widest">Smart Scan</span>
+                        <label for="ai-image-upload" id="smart-scan-btn" class="interactive flex items-center gap-2 px-3 py-2 bg-brand-50 dark:bg-brand-900/30 border border-brand-100 dark:border-brand-800 rounded-full cursor-pointer hover:bg-brand-100 dark:hover:bg-brand-900/50 transition-all shadow-sm">
+                            <i id="smart-scan-icon" data-lucide="camera" class="w-4 h-4 text-brand-500"></i>
+                            <span id="smart-scan-text" class="text-[10px] font-black text-brand-700 dark:text-brand-300 uppercase tracking-widest">Smart Scan</span>
                             <input type="file" id="ai-image-upload" accept="image/*" capture="environment" class="hidden" onchange="handleImageInput(event, true)">
                         </label>
                     </div>
@@ -1659,6 +1659,19 @@ async function analyzeFoodImageWithRetry(base64Data, attempt = 0) {
 
 async function analyzeFoodImage(b64) {
     showToast("Analyzing food with AI...", "success");
+    
+    const scanText = document.getElementById('smart-scan-text');
+    const scanIcon = document.getElementById('smart-scan-icon');
+    const scanBtn = document.getElementById('smart-scan-btn');
+    
+    if (scanText) scanText.innerText = "Analyzing...";
+    if (scanIcon) {
+        scanIcon.setAttribute('data-lucide', 'loader-2');
+        scanIcon.classList.add('animate-spin');
+    }
+    if (scanBtn) scanBtn.classList.add('opacity-70', 'pointer-events-none');
+    lucide.createIcons();
+
     const base64Data = b64.split(',')[1];
     
     try {
@@ -1690,11 +1703,21 @@ async function analyzeFoodImage(b64) {
             }
 
             syncFormDataToUI();
-            showToast("Auto-filled from image!", "success");
+            showToast("Auto-filled from image! Please review.", "success");
+        } else {
+            showToast("Could not identify food. Please enter manually.", "error");
         }
     } catch(e) {
         console.error("AI Analysis failed", e);
-        // Don't interrupt flow with an error toast, just silently fail the auto-fill
+        showToast("Smart Scan failed. Please try again.", "error");
+    } finally {
+        if (scanText) scanText.innerText = "Smart Scan";
+        if (scanIcon) {
+            scanIcon.setAttribute('data-lucide', 'camera');
+            scanIcon.classList.remove('animate-spin');
+        }
+        if (scanBtn) scanBtn.classList.remove('opacity-70', 'pointer-events-none');
+        lucide.createIcons();
     }
 }
 
@@ -2159,6 +2182,16 @@ function generateSuggestions() {
                 validCombos.push({ items: [item], nutrition: item.nutritionRating || 3, prepVal: getPrepTime(item), prepLabel: item.prepTime || '<5 mins' });
             });
 
+            let shuffleArray = (array) => {
+                let currentIndex = array.length, randomIndex;
+                while (currentIndex != 0) {
+                    randomIndex = Math.floor(Math.random() * currentIndex);
+                    currentIndex--;
+                    [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+                }
+                return array;
+            }
+
             const shuffledMeats = shuffleArray(meats).slice(0, 10);
             const shuffledCarbs = shuffleArray(carbSides).slice(0, 10);
             const shuffledVeggies = shuffleArray(veggieSides).slice(0, 10);
@@ -2178,6 +2211,16 @@ function generateSuggestions() {
                 }
             }
         } else {
+            let shuffleArray = (array) => {
+                let currentIndex = array.length, randomIndex;
+                while (currentIndex != 0) {
+                    randomIndex = Math.floor(Math.random() * currentIndex);
+                    currentIndex--;
+                    [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+                }
+                return array;
+            }
+            
             const snackPool = safeInventory.filter(i => (i.type === 'Snack' || i.type === 'Side') && getPrepTime(i) <= userMaxPrepVal);
             const shuffled = shuffleArray(snackPool);
             for (let i = 0; i < shuffled.length; i++) {
